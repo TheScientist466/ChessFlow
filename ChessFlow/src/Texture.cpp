@@ -7,9 +7,9 @@
 #include <stb_image.h>
 
 namespace ChessFlow {
-	Texture::Texture() = default;
+    Texture::Texture() = default;
 
-	void Texture::loadFromMemory(unsigned char* data, int width, int height, int noOfChannels) {
+    void Texture::loadFromMemory(unsigned char* data, int width, int height, int noOfChannels) {
         glGenTextures(1, &textureId);
         glBindTexture(GL_TEXTURE_2D, textureId);
 
@@ -26,7 +26,7 @@ namespace ChessFlow {
             PLOGV << "Image loaded at " << textureId;
         }
         else PLOGE << "Invalid data at texture ID " << textureId;
-	}
+    }
 
     void Texture::loadFromFile(const std::string& filePath) {
         int width, height, nrChanels;

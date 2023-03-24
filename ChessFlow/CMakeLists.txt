@@ -3,9 +3,9 @@
 #
 
 file(GLOB
-	src_files
-	"src/*.cpp"
-	"src/include/ChessFlow/*.h"
+    src_files
+    "src/*.cpp"
+    "src/include/ChessFlow/*.h"
 )
 
 # Add source to this project's executable.
@@ -22,7 +22,7 @@ include_directories(ChessFlow PUBLIC "src/include")
 file(GLOB assets "src/Assets/*.glsl" "src/Assets/*.ttf" "src/Assets/*.png" "src/Assets/*.jpg")
 
 add_custom_target( copy_shader ALL
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/Assets
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/Assets
     COMMAND ${CMAKE_COMMAND} -E copy ${assets} ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/Assets/
     COMMENT "Coppying shaders..."
 )
