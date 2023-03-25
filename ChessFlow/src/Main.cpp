@@ -113,6 +113,7 @@ int main() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::StyleColorsLight();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
@@ -140,12 +141,6 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        //s.draw();
-        //auto a = glm::clamp(mousePos - glm::vec2(0.5, 0.5), glm::vec2(0, 0), glm::vec2(7, 7));
-        //if(mouseClikced)
-            //p->sq.setPosition(glm::vec3(a.x, a.y, 0));
-        
 
         board.update();
         board.draw();
