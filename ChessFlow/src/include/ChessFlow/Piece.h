@@ -2,6 +2,8 @@
 
 #include "Square.h"
 
+#include <array>
+
 namespace ChessFlow {
 
     class Piece {
@@ -28,6 +30,8 @@ namespace ChessFlow {
         static glm::vec2 mousePos;
         static std::string lastMove;
 
+        static std::array<Piece, 64>* boardPtr;
+
         Piece(int pieceId = White | None);
 
         int pieceId;
@@ -37,7 +41,7 @@ namespace ChessFlow {
         glm::vec2 previousPos;
 
         static void init();
-        static void setTex(int pieceId, Piece& p);
+        static void setPiece(Piece& p, int PieceId);
         void draw();
         void update();
 
@@ -45,6 +49,8 @@ namespace ChessFlow {
         void onMouseUp();
 
         void setPos(glm::vec2 pos);
+        int getPieceID();
+        int getPieceColor();
         glm::vec2 getPos();
 
     };

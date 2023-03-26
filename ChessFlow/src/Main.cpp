@@ -34,6 +34,8 @@ bool mouseClikced;
 
 ChessFlow::Board board;
 
+char fenToSet[128] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 void checkMousePos(GLFWwindow* window, double x, double y) {
     glm::vec2 mPos = glm::vec2(x, WINDOW_HEIGHT - y) * 8.f / (float)WINDOW_HEIGHT;
     //mPos = ChessFlow::Square::proj * mPos;
@@ -105,6 +107,7 @@ int main() {
 
     
     //board.createBoard();
+    board.init();
     
     float lColor[3] =	{ ChessFlow::Square::lightColor.x,  ChessFlow::Square::lightColor.y,    ChessFlow::Square::lightColor.z}, 
           dColor[3] =	{ ChessFlow::Square::darkColor.x,   ChessFlow::Square::darkColor.y,     ChessFlow::Square::darkColor.z };
@@ -168,6 +171,7 @@ int main() {
         ImGui::Text("Square %c%d", 'a' + (int)std::floor(mousePosClamped.x), 1 + (int)std::floor(mousePosClamped.y));
         ImGui::Text("LastMove %s", ChessFlow::Piece::lastMove.c_str());
         //temp = mousePos;
+        ImGui::InputText("FEN", fenToSet, IM_ARRAYSIZE(fenToSet));
 
         if(ImGui::Checkbox("Show Demo Window", &showImGuiDemo))
             if(showImGuiDemo)
@@ -175,6 +179,13 @@ int main() {
 
         if(ImGui::Button("Flip Board"))
             board.flip();
+        ImGui::SameLine();
+        if(ImGui::Button("Set Fen")) {
+            board.setFen(fenToSet);
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Revert"))
+            board.setDefaultFen();
         ImGui::SameLine();
         if(ImGui::Button("Close"))
             externClose = true;

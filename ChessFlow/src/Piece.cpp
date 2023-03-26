@@ -14,10 +14,11 @@ namespace ChessFlow {
 
     std::string Piece::lastMove = "";
 
+    std::array<Piece, 64>* Piece::boardPtr;
+
     Piece::Piece(int _pID) {
-        pieceId = _pID;
         clickedOnMe = false;
-        setTex(pieceId, *this);
+        setPiece(*this, _pID);
         sq.useTexture = true;
         sq.setPosition(glm::vec3(0, 7, 0));
         previousPos = glm::vec2(sq.position.x, sq.position.y);
@@ -32,7 +33,8 @@ namespace ChessFlow {
         Piece::PawnTex.loadFromFile("Assets/Pawn.png");
     }
 
-    void Piece::setTex(int pieceId, Piece& p) {
+    void Piece::setPiece(Piece& p, int pieceId) {
+        p.pieceId = pieceId;
         switch(pieceId & ~8) {
         case Piece::King:
             p.sq.tex = &KingTex;
@@ -54,12 +56,11 @@ namespace ChessFlow {
             break;
         }
 
-        if((pieceId & Piece::Black) == Piece::Black)
-            p.sq.toInvertColor = true;
+        p.sq.toInvertColor = p.getPieceColor();
     }
 
     void Piece::draw() {
-        if(pieceId != None)
+        if((pieceId & 0b0111) != None)
             sq.draw();
     }
 
@@ -76,23 +77,40 @@ namespace ChessFlow {
     }
 
     void Piece::onMouseUp() {
+        glm::vec2 finalPos = glm::floor(getPos() + glm::vec2(0.5, 0.5));
         if(clickedOnMe) {
             clickedOnMe = false;
-            sq.setPosition(glm::floor(sq.position + glm::vec3(0.5, 0.5, 0)));
-            if(previousPos != glm::vec2(sq.position.x, sq.position.y)) {
-                lastMove = "";
-                //lastMove += 'B';
-                lastMove += ((char)('a' + previousPos.x));
-                lastMove += (char)(previousPos.y + 1 + '0');
-                lastMove += ((char)('a' + sq.position.x));
-                lastMove += (char)(sq.position.y + 1 + '0');
-                //PLOGW << "Move B" << (char)('a' + previousPos.x) << previousPos.y + 1 << (char)('a' + sq.position.x) << sq.position.y + 1;
+            Piece* destinationPiece = &(*boardPtr)[finalPos.x + finalPos.y * 8];
+            if(destinationPiece->getPieceID() == Piece::None || destinationPiece->getPieceColor() != getPieceColor()) {
+                setPos(previousPos);
+                setPiece(*destinationPiece, pieceId);
+                //destinationPiece->pieceId = pieceId;
+                setPiece((*boardPtr)[previousPos.x + previousPos.y * 8], Piece::None);
+                if(previousPos != glm::vec2(sq.position.x, sq.position.y)) {
+                    lastMove = "";
+                    //lastMove += 'B';
+                    lastMove += ((char)('a' + previousPos.x));
+                    lastMove += (char)(previousPos.y + 1 + '0');
+                    lastMove += ((char)('a' + sq.position.x));
+                    lastMove += (char)(sq.position.y + 1 + '0');
+                    //PLOGW << "Move B" << (char)('a' + previousPos.x) << previousPos.y + 1 << (char)('a' + sq.position.x) << sq.position.y + 1;
+                }
             }
+            else
+                setPos(previousPos);
         }
     }
 
     void Piece::setPos(glm::vec2 pos) {
         sq.setPosition(glm::vec3(pos, 0.f));
+    }
+
+    int Piece::getPieceID() {
+        return pieceId & 0b0111;
+    }
+
+    int Piece::getPieceColor() {
+        return (pieceId & 0b1000) >> 3;
     }
 
     glm::vec2 Piece::getPos() {

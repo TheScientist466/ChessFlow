@@ -11,9 +11,13 @@ namespace ChessFlow {
         Board();
         std::array<Square, 64> sqs;
 
-        std::vector<Piece> pieces;
+        std::array<Piece, 64> pieces;
 
         static glm::vec2 getPosFromBoardCoord(std::string boardPos);
+
+        void init();
+        void setFen(std::string fenString);
+        void setDefaultFen();
 
         void flip();
         void onMouseDown();
