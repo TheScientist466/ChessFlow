@@ -1,4 +1,5 @@
 #include "ChessFlow/Piece.h"
+
 #include <plog/Log.h>
 
 namespace ChessFlow {
@@ -15,6 +16,7 @@ namespace ChessFlow {
     std::string Piece::lastMove = "";
 
     std::array<Piece, 64>* Piece::boardPtr;
+    bool Piece::flipped = false;
 
     Piece::Piece(int _pID) {
         clickedOnMe = false;
@@ -70,6 +72,7 @@ namespace ChessFlow {
     }
 
     void Piece::onMouseDown() {
+        //glm::vec2 pos = glm::floor
         if(glm::vec3(glm::floor(mousePos), 0) == sq.position) {
             clickedOnMe = true;
             previousPos = glm::vec2(sq.position.x, sq.position.y);
@@ -78,6 +81,8 @@ namespace ChessFlow {
 
     void Piece::onMouseUp() {
         glm::vec2 finalPos = glm::floor(getPos() + glm::vec2(0.5, 0.5));
+        if(flipped)
+            finalPos = glm::vec2(7, 7) - finalPos;
         if(clickedOnMe) {
             clickedOnMe = false;
             Piece* destinationPiece = &(*boardPtr)[finalPos.x + finalPos.y * 8];
@@ -86,14 +91,14 @@ namespace ChessFlow {
                 setPiece(*destinationPiece, pieceId);
                 //destinationPiece->pieceId = pieceId;
                 setPiece((*boardPtr)[previousPos.x + previousPos.y * 8], Piece::None);
-                if(previousPos != glm::vec2(sq.position.x, sq.position.y)) {
+                if(previousPos != finalPos) {
                     lastMove = "";
                     //lastMove += 'B';
                     lastMove += ((char)('a' + previousPos.x));
                     lastMove += (char)(previousPos.y + 1 + '0');
-                    lastMove += ((char)('a' + sq.position.x));
-                    lastMove += (char)(sq.position.y + 1 + '0');
-                    //PLOGW << "Move B" << (char)('a' + previousPos.x) << previousPos.y + 1 << (char)('a' + sq.position.x) << sq.position.y + 1;
+                    lastMove += ((char)('a' + finalPos.x));
+                    lastMove += (char)(finalPos.y + 1 + '0');
+                    //PLOGW << "Move " << lastMove;
                 }
             }
             else

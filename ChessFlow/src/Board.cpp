@@ -79,8 +79,9 @@ namespace ChessFlow {
     }
 
     void Board::flip() {
-        for(auto& s : sqs) {
-            s.setPosition(glm::vec3(s.position.x, 7.f - s.position.y, 0.f));
+        Piece::flipped = !Piece::flipped;
+        for(auto& p : pieces) {
+            p.setPos(glm::vec2(7, 7) - p.getPos());
         }
     }
 

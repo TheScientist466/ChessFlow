@@ -29,15 +29,19 @@ int fps = 0;
 float targetFramesperSecond = 60.0;
 
 glm::vec2 mousePos;
+glm::vec2 windowOffset;
 glm::vec2 mousePosClamped;
 bool mouseClikced;
+bool mouseUpdateDetect = false;
 
 ChessFlow::Board board;
 
 char fenToSet[128] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+//ChessFlow::Texture frameBufferTexture;
+
 void checkMousePos(GLFWwindow* window, double x, double y) {
-    glm::vec2 mPos = glm::vec2(x, WINDOW_HEIGHT - y) * 8.f / (float)WINDOW_HEIGHT;
+    glm::vec2 mPos = glm::vec2(x - windowOffset.x, WINDOW_HEIGHT - y + windowOffset.y) * 8.f / (float)WINDOW_HEIGHT;
     //mPos = ChessFlow::Square::proj * mPos;
     mousePos = mPos;
     mousePosClamped = glm::clamp(mousePos, glm::vec2(0, 0), glm::vec2(7, 7));
@@ -46,7 +50,7 @@ void checkMousePos(GLFWwindow* window, double x, double y) {
 }
 
 void mouseButton(GLFWwindow* window, int button, int action, int mods) {
-    if(button == GLFW_MOUSE_BUTTON_LEFT) {
+    if(button == GLFW_MOUSE_BUTTON_LEFT && mouseUpdateDetect) {
         glm::vec2 mPos = glm::floor(mousePos);
         if(action == GLFW_PRESS) {
             mouseClikced = true;
@@ -63,7 +67,7 @@ void mouseButton(GLFWwindow* window, int button, int action, int mods) {
 void windowResize(GLFWwindow* window, int w, int h) {
     WINDOW_WIDTH = w;
     WINDOW_HEIGHT = h;
-    ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
+    //ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
 }
 
 
@@ -79,7 +83,7 @@ int main() {
     }
     else PLOGV << "GLFW initialized";
     PLOGV << "Creating Window";
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ChessFlow", NULL, NULL);
     if(!window) {
         PLOGF << "Could not initialize window";
@@ -100,15 +104,32 @@ int main() {
     glfwSetMouseButtonCallback(window, mouseButton);
     glfwSetWindowSizeCallback(window, windowResize);
 
+    PLOGV << "Creating FrameBuffer";
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // create a color attachment texture
+    unsigned int textureColorbuffer;
+    ChessFlow::Texture fBuffTex;
+    fBuffTex.create(800, 800, 3);
+    textureColorbuffer = fBuffTex.textureId;
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        PLOGF << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
+    else
+        PLOGV << "FrameBuffer has been created";
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     ChessFlow::Square::init();
     ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
-
     ChessFlow::Piece::init();
 
     
     //board.createBoard();
     board.init();
-    
+
     float lColor[3] =	{ ChessFlow::Square::lightColor.x,  ChessFlow::Square::lightColor.y,    ChessFlow::Square::lightColor.z}, 
           dColor[3] =	{ ChessFlow::Square::darkColor.x,   ChessFlow::Square::darkColor.y,     ChessFlow::Square::darkColor.z };
 
@@ -117,6 +138,8 @@ int main() {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
+    
     ImGui::StyleColorsLight();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
@@ -139,18 +162,23 @@ int main() {
 
         previousTime = currentTime;
         glfwPollEvents();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        board.update();
+        board.draw();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport();
 
-        board.update();
-        board.draw();
-
-        ImGui::Begin("Inspector", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-        ImGui::SetWindowSize(ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, WINDOW_HEIGHT));
-        ImGui::SetWindowPos(ImVec2(WINDOW_HEIGHT, 0));
+        ImGui::Begin("Inspector", NULL, ImGuiWindowFlags_NoCollapse);// | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        //ImGui::SetWindowSize(ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, WINDOW_HEIGHT));
+        //ImGui::SetWindowPos(ImVec2(WINDOW_HEIGHT, 0));
         ImGui::PushFont(ubFont);
 
         if(ImGui::TreeNode("FPS")) {
@@ -190,7 +218,20 @@ int main() {
         if(ImGui::Button("Close"))
             externClose = true;
 
+
         ImGui::PopFont();
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(800, 800));
+        ImGui::Begin("Board", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+        ImGui::SetWindowSize(ImVec2(800, 800));
+        float minDimentions = std::min(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+        ImGui::SetCursorPos(ImVec2(0, 0));
+        ImGui::Image((void*)(intptr_t)textureColorbuffer, ImVec2(minDimentions, minDimentions), ImVec2(0, 1), ImVec2(1, 0));
+        //mouseUpdateDetect = ImGui::IsItemClicked();
+        windowOffset = glm::vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+        //PLOGW << ImGui::Get;
+        mouseUpdateDetect =  ImGui::IsItemHovered();
         ImGui::End();
 
         if(showImGuiDemo)

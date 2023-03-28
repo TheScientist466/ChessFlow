@@ -31,6 +31,7 @@ namespace ChessFlow {
         static std::string lastMove;
 
         static std::array<Piece, 64>* boardPtr;
+        static bool flipped;
 
         Piece(int pieceId = White | None);
 

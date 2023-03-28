@@ -26,6 +26,8 @@ namespace ChessFlow {
             PLOGV << "Image loaded at " << textureId;
         }
         else PLOGE << "Invalid data at texture ID " << textureId;
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void Texture::loadFromFile(const std::string& filePath) {
@@ -37,6 +39,19 @@ namespace ChessFlow {
         }
         else PLOGE << "Failed to load image at \"" << filePath << "\"";
         stbi_image_free(imageData);
+    }
+
+    void Texture::create(int height, int width, int noOfChannels) {
+
+        glGenTextures(1, &textureId);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, noOfChannels == 3 ? GL_RGB : GL_RGBA, width, height, 0, noOfChannels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        PLOGV << "Created new Texture at " << textureId;
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
 }
