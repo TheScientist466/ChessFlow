@@ -13,3 +13,7 @@
 [submodule "extlibs/imgui"]
 	path = extlibs/imgui
 	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "extlibs/tiny-process-library"]
+	path = extlibs/tiny-process-library
+	url = https://gitlab.com/eidheim/tiny-process-library.git

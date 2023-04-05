@@ -3,6 +3,7 @@
 #include "Square.h"
 
 #include <array>
+#include "Engines.h"
 
 namespace ChessFlow {
 
@@ -34,6 +35,7 @@ namespace ChessFlow {
         static std::string* movesPtr;
         static bool flipped;
         static bool* whiteToMovePtr;
+        static Engines* enginePtr;
 
         Piece(int pieceId = White | None);
 

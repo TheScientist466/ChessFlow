@@ -20,6 +20,7 @@ namespace ChessFlow {
     std::string* Piece::movesPtr;
     bool Piece::flipped = false;
     bool* Piece::whiteToMovePtr = nullptr;
+    Engines* Piece::enginePtr;
 
     Piece::Piece(int _pID) {
         clickedOnMe = false;
@@ -126,6 +127,8 @@ namespace ChessFlow {
                     *movesPtr += (" " + lastMove);
                     PLOGW << *movesPtr;
                     *whiteToMovePtr = !(*whiteToMovePtr);
+                    enginePtr->writeToStdIn(("position startpos moves" + *movesPtr));
+                    enginePtr->writeToStdIn("go depth 5");
                 }
             }
             else

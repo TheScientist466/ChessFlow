@@ -16,7 +16,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Add tests and install targets if needed.
-target_link_libraries(ChessFlow glfw glad glm plog imgui)
+target_link_libraries(ChessFlow glfw glad glm plog imgui tiny-process-library)
 include_directories(ChessFlow PUBLIC "src/include")
 
 file(GLOB assets "src/Assets/*.glsl" "src/Assets/*.ttf" "src/Assets/*.png" "src/Assets/*.jpg")

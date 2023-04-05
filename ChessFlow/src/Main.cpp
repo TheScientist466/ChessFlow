@@ -16,6 +16,7 @@
 #include "ChessFlow/Square.h"
 #include "ChessFlow/Board.h"
 #include "ChessFlow/Piece.h"
+#include "ChessFlow/Engines.h"
 
 #include "ChessFlow/HandleError.h"
 
@@ -75,6 +76,8 @@ int main() {
     plog::init(plog::verbose, &consoleAppender);
     PLOGV << "APPLICATION STARTED";
 
+    Engines e("E:\\Games\\Chess\\Engines\\stockfish_15_win_x64_avx2\\stockfish.exe");
+
     PLOGV << "Initializing GLFW";
     if(!glfwInit()) {
         PLOGF << "Could not initialize GLFW";
@@ -121,6 +124,7 @@ int main() {
     ChessFlow::Square::init();
     ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
     ChessFlow::Piece::init();
+    ChessFlow::Piece::enginePtr = &e;
 
 
     board.init();
@@ -225,6 +229,8 @@ int main() {
         if(ImGui::Button("Close"))
             externClose = true;
 
+        char* buff = (char*)(e.processStdOutLast.c_str());
+        ImGui::InputTextMultiline("Engine std out last", buff, e.processStdErrLast.size(), ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, 400));
 
         ImGui::PopFont();
         ImGui::End();
