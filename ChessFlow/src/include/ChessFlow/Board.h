@@ -13,10 +13,13 @@ namespace ChessFlow {
 
         std::array<Piece, 64> pieces;
 
+        bool whiteToMove;
         static glm::vec2 getPosFromBoardCoord(std::string boardPos);
 
+        std::string moves;
         void init();
         void setFen(std::string fenString);
+        std::string getFen();
         void setDefaultFen();
 
         void flip();

@@ -37,8 +37,6 @@ namespace ChessFlow {
         color = &darkColor;
         tex = &sampleTexture;
         useTexture = false;
-        //tex = new Texture();
-        //tex.loadFromFile("Assets/m.png");
     }
 
     void Square::init() {

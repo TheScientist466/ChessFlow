@@ -1,6 +1,7 @@
 #include "ChessFlow/Piece.h"
 
 #include <plog/Log.h>
+#include <unordered_map>
 
 namespace ChessFlow {
 
@@ -16,7 +17,9 @@ namespace ChessFlow {
     std::string Piece::lastMove = "";
 
     std::array<Piece, 64>* Piece::boardPtr;
+    std::string* Piece::movesPtr;
     bool Piece::flipped = false;
+    bool* Piece::whiteToMovePtr = nullptr;
 
     Piece::Piece(int _pID) {
         clickedOnMe = false;
@@ -61,6 +64,31 @@ namespace ChessFlow {
         p.sq.toInvertColor = p.getPieceColor();
     }
 
+    int Piece::getPieceIdFromSymbol(char symbol) {
+        std::unordered_map<char, int> pieceIdFromSymbol{
+           {'k', Piece::King},
+           {'q', Piece::Queen},
+           {'b', Piece::Bishop},
+           {'n', Piece::Knight},
+           {'r', Piece::Rook},
+           {'p', Piece::Pawn}
+        };
+        return pieceIdFromSymbol[symbol];
+    }
+
+    char Piece::getSymbolFromPieceId(int Id)
+    {
+        std::unordered_map<char, int> pieceIdFromSymbol{
+           {Piece::King,    'k'},
+           {Piece::Queen,   'q'},
+           {Piece::Bishop,  'b'},
+           {Piece::Knight,  'n'},
+           {Piece::Rook,    'r'},
+           {Piece::Pawn,    'p'}
+        };
+        return pieceIdFromSymbol[Id];
+    }
+
     void Piece::draw() {
         if((pieceId & 0b0111) != None)
             sq.draw();
@@ -72,7 +100,6 @@ namespace ChessFlow {
     }
 
     void Piece::onMouseDown() {
-        //glm::vec2 pos = glm::floor
         if(glm::vec3(glm::floor(mousePos), 0) == sq.position) {
             clickedOnMe = true;
             previousPos = glm::vec2(sq.position.x, sq.position.y);
@@ -86,19 +113,19 @@ namespace ChessFlow {
         if(clickedOnMe) {
             clickedOnMe = false;
             Piece* destinationPiece = &(*boardPtr)[finalPos.x + finalPos.y * 8];
-            if(destinationPiece->getPieceID() == Piece::None || destinationPiece->getPieceColor() != getPieceColor()) {
+            if((destinationPiece->getPieceID() == Piece::None || destinationPiece->getPieceColor() != getPieceColor()) && getPieceColor() ^ *whiteToMovePtr) {
                 setPos(previousPos);
                 setPiece(*destinationPiece, pieceId);
-                //destinationPiece->pieceId = pieceId;
                 setPiece((*boardPtr)[previousPos.x + previousPos.y * 8], Piece::None);
                 if(previousPos != finalPos) {
                     lastMove = "";
-                    //lastMove += 'B';
                     lastMove += ((char)('a' + previousPos.x));
                     lastMove += (char)(previousPos.y + 1 + '0');
                     lastMove += ((char)('a' + finalPos.x));
                     lastMove += (char)(finalPos.y + 1 + '0');
-                    //PLOGW << "Move " << lastMove;
+                    *movesPtr += (" " + lastMove);
+                    PLOGW << *movesPtr;
+                    *whiteToMovePtr = !(*whiteToMovePtr);
                 }
             }
             else

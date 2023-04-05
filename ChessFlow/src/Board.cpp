@@ -2,10 +2,10 @@
 
 #include <plog/Log.h>
 #include <unordered_map>
+#include <string>
 
 namespace ChessFlow {
     Board::Board() {
-        //sqs = new std::vector<Square>;
         PLOGV << "Creating Chessboard";
         int ctr = 0;
         for(unsigned int file = 0; file < 8; file++) {
@@ -16,7 +16,6 @@ namespace ChessFlow {
                 s.id = ctr;
                 ctr++;
                 sqs[file * 8 + rank] = s;
-                //PLOGV << sqs->size();
             }
         }
         for(int i = 0; i < pieces.size(); i++) {
@@ -28,25 +27,22 @@ namespace ChessFlow {
         for(int i = 0; i < pieces.size(); i++) {
             pieces[i].setPos(glm::vec2(i % 8, i / 8));
         }
+
+        moves = "";
     }
 
     void Board::init() {
         Piece::boardPtr = &pieces;
+
+        Piece::movesPtr = &moves;
+        Piece::whiteToMovePtr = &whiteToMove;
+        whiteToMove = true;
     }
 
     void Board::setFen(std::string fenString) {
         for(Piece& p : pieces) {
             Piece::setPiece(p, Piece::None);
         }
-
-        std::unordered_map<char, int> pieceIdFromSymbol{
-            {'k', Piece::King},
-            {'q', Piece::Queen},
-            {'b', Piece::Bishop},
-            {'n', Piece::Knight},
-            {'r', Piece::Rook},
-            {'p', Piece::Pawn}
-        };
 
         std::string fenBoard = fenString.substr(0, fenString.find_first_of(' '));
         int file = 0, rank = 7;
@@ -61,12 +57,43 @@ namespace ChessFlow {
                 }
                 else {
                     int pieceColor = isupper(symbol) ? Piece::White : Piece::Black;
-                    int pieceType = pieceIdFromSymbol[(char)tolower(symbol)];
+                    int pieceType = Piece::getPieceIdFromSymbol((char)tolower(symbol));
                     Piece::setPiece(pieces[file + rank * 8], pieceColor | pieceType);
                     file++;
                 }
             }
         }
+        whiteToMove = fenString.c_str()[fenString.find_first_of(' ') + 1] == 'w';
+    }
+
+    std::string Board::getFen() {
+        std::string fen = "";
+        int ctr = 0;
+        for(int rank = 7; rank >= 0; rank--) {
+            for(int file = 0; file < 8; file++) {
+                if(pieces[file + rank * 8].getPieceID() == Piece::None)
+                    ctr++;
+                else {
+                    if(ctr != 0)
+                        fen += ctr + '0';
+                    ctr = 0;
+                    char symbol = Piece::getSymbolFromPieceId(pieces[file + rank * 8].getPieceID());
+                    if(pieces[file + rank * 8].getPieceColor())
+                        fen += symbol;
+                    else
+                        fen += toupper(symbol);
+                }
+            }
+            if(ctr != 0)
+                fen += ctr + '0';
+            ctr = 0;
+            if(rank > 0)
+                fen += "/";
+        }
+
+        fen += " ";
+        fen += whiteToMove ? 'w' : 'b';
+        return fen;
     }
 
     void Board::setDefaultFen() {

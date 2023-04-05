@@ -31,7 +31,9 @@ namespace ChessFlow {
         static std::string lastMove;
 
         static std::array<Piece, 64>* boardPtr;
+        static std::string* movesPtr;
         static bool flipped;
+        static bool* whiteToMovePtr;
 
         Piece(int pieceId = White | None);
 
@@ -43,6 +45,8 @@ namespace ChessFlow {
 
         static void init();
         static void setPiece(Piece& p, int PieceId);
+        static int getPieceIdFromSymbol(char symbol);
+        static char getSymbolFromPieceId(int id);
         void draw();
         void update();
 

@@ -17,6 +17,8 @@
 #include "ChessFlow/Board.h"
 #include "ChessFlow/Piece.h"
 
+#include "ChessFlow/HandleError.h"
+
 int WINDOW_WIDTH = 1200;
 int WINDOW_HEIGHT = 800;
 
@@ -34,23 +36,22 @@ glm::vec2 mousePosClamped;
 bool mouseClikced;
 bool mouseUpdateDetect = false;
 
+bool useImGuiWindow = false;
+
 ChessFlow::Board board;
 
 char fenToSet[128] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-//ChessFlow::Texture frameBufferTexture;
 
 void checkMousePos(GLFWwindow* window, double x, double y) {
     glm::vec2 mPos = glm::vec2(x - windowOffset.x, WINDOW_HEIGHT - y + windowOffset.y) * 8.f / (float)WINDOW_HEIGHT;
-    //mPos = ChessFlow::Square::proj * mPos;
     mousePos = mPos;
     mousePosClamped = glm::clamp(mousePos, glm::vec2(0, 0), glm::vec2(7, 7));
     ChessFlow::Piece::mousePos = mousePos;
-    //PLOGI << std::floor(mPos.x) << " " << std::floor(mPos.y);
 }
 
 void mouseButton(GLFWwindow* window, int button, int action, int mods) {
-    if(button == GLFW_MOUSE_BUTTON_LEFT && mouseUpdateDetect) {
+    if(button == GLFW_MOUSE_BUTTON_LEFT && (mouseUpdateDetect || !useImGuiWindow)) {
         glm::vec2 mPos = glm::floor(mousePos);
         if(action == GLFW_PRESS) {
             mouseClikced = true;
@@ -58,7 +59,6 @@ void mouseButton(GLFWwindow* window, int button, int action, int mods) {
         }
         else if(action == GLFW_RELEASE && mouseClikced) {
             mouseClikced = false;
-            //PLOGW << "Move  B" << (char)('a' + p->sq.position.x) << p->sq.position.y + 1;
             board.onMouseUp();
         }
     }
@@ -67,7 +67,6 @@ void mouseButton(GLFWwindow* window, int button, int action, int mods) {
 void windowResize(GLFWwindow* window, int w, int h) {
     WINDOW_WIDTH = w;
     WINDOW_HEIGHT = h;
-    //ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
 }
 
 
@@ -83,7 +82,6 @@ int main() {
     }
     else PLOGV << "GLFW initialized";
     PLOGV << "Creating Window";
-    //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "ChessFlow", NULL, NULL);
     if(!window) {
         PLOGF << "Could not initialize window";
@@ -93,7 +91,6 @@ int main() {
 
     PLOGV << "Loading OpenGL";
     glfwMakeContextCurrent(window);
-    //glfwSwapInterval(0);
     if(!gladLoadGL()) {
         PLOGF << "Could not load OpenGL";
         return -1;
@@ -106,15 +103,14 @@ int main() {
 
     PLOGV << "Creating FrameBuffer";
     unsigned int framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    GLCall(glGenFramebuffers(1, &framebuffer));
+    GLCall(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
     // create a color attachment texture
     unsigned int textureColorbuffer;
     ChessFlow::Texture fBuffTex;
-    fBuffTex.create(800, 800, 3);
+    fBuffTex.create(WINDOW_HEIGHT, WINDOW_HEIGHT, 3);
     textureColorbuffer = fBuffTex.textureId;
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0));
     
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         PLOGF << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
@@ -126,8 +122,7 @@ int main() {
     ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
     ChessFlow::Piece::init();
 
-    
-    //board.createBoard();
+
     board.init();
 
     float lColor[3] =	{ ChessFlow::Square::lightColor.x,  ChessFlow::Square::lightColor.y,    ChessFlow::Square::lightColor.z}, 
@@ -163,43 +158,53 @@ int main() {
         previousTime = currentTime;
         glfwPollEvents();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        board.update();
-        board.draw();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        glClear(GL_COLOR_BUFFER_BIT);
+        if(useImGuiWindow) {
+            GLCall(glBindFramebuffer(GL_FRAMEBUFFER, framebuffer));
+            GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+            board.update();
+            board.draw();
+            GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+            GLCall(glClear(GL_COLOR_BUFFER_BIT));
+        }
+        else {
+            GLCall(glClear(GL_COLOR_BUFFER_BIT));
+            board.update();
+            board.draw();
+        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport();
+        if(useImGuiWindow)
+            ImGui::DockSpaceOverViewport();
 
-        ImGui::Begin("Inspector", NULL, ImGuiWindowFlags_NoCollapse);// | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-        //ImGui::SetWindowSize(ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, WINDOW_HEIGHT));
-        //ImGui::SetWindowPos(ImVec2(WINDOW_HEIGHT, 0));
+        ImGui::Begin("Inspector", NULL, ImGuiWindowFlags_NoCollapse | (useImGuiWindow ? 0 : (ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)));
         ImGui::PushFont(ubFont);
+        if(!useImGuiWindow) {
+            ImGui::SetWindowSize(ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, WINDOW_HEIGHT));
+            ImGui::SetWindowPos(ImVec2(WINDOW_HEIGHT, 0));
+        }
 
         if(ImGui::TreeNode("FPS")) {
             ImGui::Text("FPS : %.2f", 1.f / deltaTime);
             ImGui::SliderFloat("Target FPS", &targetFramesperSecond, 5.f, 200.f, "%.1f");
             ImGui::TreePop();
         }
-        //ImGui::SetNextItemOpen(true);
         if(ImGui::TreeNode("Colors")) {
             ImGui::ColorEdit3("LightColor", lColor);
             ImGui::ColorEdit3("DarkColor", dColor);
             ImGui::TreePop();
         }
-        //ImGui::Checkbox("Use Texture", &ChessFlow::Square::useTexture);
         glm::vec2 temp = mousePos;
         ImGui::Text("Mouse Position");
         ImGui::InputFloat2("", glm::value_ptr(temp), "%.2f");
         ImGui::Text("Square %c%d", 'a' + (int)std::floor(mousePosClamped.x), 1 + (int)std::floor(mousePosClamped.y));
         ImGui::Text("LastMove %s", ChessFlow::Piece::lastMove.c_str());
-        //temp = mousePos;
         ImGui::InputText("FEN", fenToSet, IM_ARRAYSIZE(fenToSet));
+        std::string cFen = board.getFen();
+
+        ImGui::InputText("Current FEN", (char*)cFen.c_str(), cFen.size());
+        ImGui::Checkbox("Use ImGuiWindow as Board", &useImGuiWindow);
 
         if(ImGui::Checkbox("Show Demo Window", &showImGuiDemo))
             if(showImGuiDemo)
@@ -212,8 +217,10 @@ int main() {
             board.setFen(fenToSet);
         }
         ImGui::SameLine();
-        if(ImGui::Button("Revert"))
+        if(ImGui::Button("Revert")) {
             board.setDefaultFen();
+            board.moves = "";
+        }
         ImGui::SameLine();
         if(ImGui::Button("Close"))
             externClose = true;
@@ -221,18 +228,17 @@ int main() {
 
         ImGui::PopFont();
         ImGui::End();
-
-        ImGui::SetNextWindowSize(ImVec2(800, 800));
-        ImGui::Begin("Board", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-        ImGui::SetWindowSize(ImVec2(800, 800));
-        float minDimentions = std::min(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
-        ImGui::SetCursorPos(ImVec2(0, 0));
-        ImGui::Image((void*)(intptr_t)textureColorbuffer, ImVec2(minDimentions, minDimentions), ImVec2(0, 1), ImVec2(1, 0));
-        //mouseUpdateDetect = ImGui::IsItemClicked();
-        windowOffset = glm::vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-        //PLOGW << ImGui::Get;
-        mouseUpdateDetect =  ImGui::IsItemHovered();
-        ImGui::End();
+        if(useImGuiWindow) {
+            ImGui::SetNextWindowSize(ImVec2(800, 800));
+            ImGui::Begin("Board", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+            ImGui::SetWindowSize(ImVec2(800, 800));
+            float minDimentions = std::min(ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+            ImGui::SetCursorPos(ImVec2(0, 0));
+            ImGui::Image((void*)(intptr_t)textureColorbuffer, ImVec2(minDimentions, minDimentions), ImVec2(0, 1), ImVec2(1, 0));
+            windowOffset = glm::vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+            mouseUpdateDetect = ImGui::IsItemHovered();
+            ImGui::End();
+        }
 
         if(showImGuiDemo)
             ImGui::ShowDemoWindow();

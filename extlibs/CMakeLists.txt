@@ -6,7 +6,6 @@ add_subdirectory(glfw)
 add_subdirectory(glad)
 add_subdirectory(glm)
 add_subdirectory(plog)
-add_subdirectory(tiny-process-library)
 
 set(IMGUI_DIR imgui)
 add_library(imgui

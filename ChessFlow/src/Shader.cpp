@@ -23,9 +23,9 @@ namespace ChessFlow {
     Shader::Shader() = default;
 
     Shader::~Shader() {
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        glDeleteProgram(shaderProgram);
+        GLCall(glDeleteShader(vertexShader));
+        GLCall(glDeleteShader(fragmentShader));
+        GLCall(glDeleteProgram(shaderProgram));
     }
 
     std::string Shader::read(const std::string& path) {
@@ -131,6 +131,6 @@ namespace ChessFlow {
     }
 
     void Shader::setTexture(ChessFlow::Texture tex) {
-        glBindTexture(GL_TEXTURE_2D, tex.textureId);
+        GLCall(glBindTexture(GL_TEXTURE_2D, tex.textureId));
     }
 }
