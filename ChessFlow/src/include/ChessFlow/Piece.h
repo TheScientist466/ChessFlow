@@ -36,6 +36,7 @@ namespace ChessFlow {
         static bool flipped;
         static bool* whiteToMovePtr;
         static Engines* enginePtr;
+        static int* engineDepth;
 
         Piece(int pieceId = White | None);
 

@@ -23,4 +23,6 @@ public:
 	void writeToStdIn(std::string toWrite);
 	std::string readFromStdOut();
 	std::string readFromStdErr();
+
+	void goDepth(int depth = 20);
 };

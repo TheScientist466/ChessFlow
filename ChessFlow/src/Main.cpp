@@ -43,6 +43,8 @@ ChessFlow::Board board;
 
 char fenToSet[128] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+int engineDepth = 14;
+
 
 void checkMousePos(GLFWwindow* window, double x, double y) {
     glm::vec2 mPos = glm::vec2(x - windowOffset.x, WINDOW_HEIGHT - y + windowOffset.y) * 8.f / (float)WINDOW_HEIGHT;
@@ -125,6 +127,7 @@ int main() {
     ChessFlow::Square::proj = glm::ortho(0.f, 8.f * (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.f, 8.f);
     ChessFlow::Piece::init();
     ChessFlow::Piece::enginePtr = &e;
+    ChessFlow::Piece::engineDepth = &engineDepth;
 
 
     board.init();
@@ -199,20 +202,36 @@ int main() {
             ImGui::ColorEdit3("DarkColor", dColor);
             ImGui::TreePop();
         }
-        glm::vec2 temp = mousePos;
-        ImGui::Text("Mouse Position");
-        ImGui::InputFloat2("", glm::value_ptr(temp), "%.2f");
-        ImGui::Text("Square %c%d", 'a' + (int)std::floor(mousePosClamped.x), 1 + (int)std::floor(mousePosClamped.y));
-        ImGui::Text("LastMove %s", ChessFlow::Piece::lastMove.c_str());
-        ImGui::InputText("FEN", fenToSet, IM_ARRAYSIZE(fenToSet));
-        std::string cFen = board.getFen();
+        if(ImGui::TreeNode("Board")) {
+            ImGui::Text("Square %c%d", 'a' + (int)std::floor(mousePosClamped.x), 1 + (int)std::floor(mousePosClamped.y));
+            ImGui::Text("LastMove %s", ChessFlow::Piece::lastMove.c_str());
+            ImGui::InputText("FEN", fenToSet, IM_ARRAYSIZE(fenToSet));
+            std::string cFen = board.getFen();
 
-        ImGui::InputText("Current FEN", (char*)cFen.c_str(), cFen.size());
-        ImGui::Checkbox("Use ImGuiWindow as Board", &useImGuiWindow);
+            ImGui::InputText("Current FEN", (char*)cFen.c_str(), cFen.size());
+            ImGui::TreePop();
+        }
 
-        if(ImGui::Checkbox("Show Demo Window", &showImGuiDemo))
-            if(showImGuiDemo)
-                PLOGW << "ImGui Demo Window is shown";
+        if(ImGui::TreeNode("GUI")) {
+            glm::vec2 temp = mousePos;
+            ImGui::Text("Mouse Position");
+            ImGui::InputFloat2("", glm::value_ptr(temp), "%.2f");
+            ImGui::Checkbox("Use ImGuiWindow as Board", &useImGuiWindow);
+            if(ImGui::Checkbox("Show Demo Window", &showImGuiDemo))
+                if(showImGuiDemo)
+                    PLOGW << "ImGui Demo Window is shown";
+            ImGui::TreePop();
+        }
+
+        if(ImGui::TreeNode("Engine")) {
+            if(ImGui::SliderInt("Engine Depth", &engineDepth, 1, 40)) {
+                e.writeToStdIn("stop");
+                e.goDepth(engineDepth);
+            }
+            char* buff = (char*)(e.processStdOutLast.c_str());
+            ImGui::InputTextMultiline("Engine std out last", buff, e.processStdErrLast.size(), ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, 400));
+            ImGui::TreePop();
+        }
 
         if(ImGui::Button("Flip Board"))
             board.flip();
@@ -229,8 +248,6 @@ int main() {
         if(ImGui::Button("Close"))
             externClose = true;
 
-        char* buff = (char*)(e.processStdOutLast.c_str());
-        ImGui::InputTextMultiline("Engine std out last", buff, e.processStdErrLast.size(), ImVec2(WINDOW_WIDTH - WINDOW_HEIGHT, 400));
 
         ImGui::PopFont();
         ImGui::End();
